@@ -24,7 +24,7 @@ int main(){
   //F = argv[4]; //F is type of filtering
   image = readPPM("test.ppm", &width, &height, &max); //Read the image, i don't know if we need this in the MPI section
 
-
+//a
   //Start MPI here, each section needs an Malloc of their calculation size
   pixel = malloc(sizeof(image));
 
