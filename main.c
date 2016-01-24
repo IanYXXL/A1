@@ -48,10 +48,21 @@ int main(int argc, char* argv[]){
 			MPI_Send(image+(i-1)*sent,sent*width, MPI_DOUBLE, i, tag, MPI_COMM_WORLD); //send pointers to other processes
 		}
 		
-		
-		for(i = 0; i < rows[0]*width; i+=3){// cycle through all of rank 0's pixels
-  		Jeremyqzt(newPixel, image, i, width);//NOTE: for process 0: it has access to whole image, so boarder cases are not covered.
+		int counter = 0;
+		int width_counter = width;
+		//printf("old pixel 0: %d %d %d\n", image[rows[0]*width].r, image[rows[0]*width].g, image[rows[0]*width].b);
+		top(newPixel, image, 0, width);//NOTE: first run through
+		while(counter < rows[0]*width){// cycle through all of rank 0's pixels
+  		if(counter - width_counter > 0){
+  			width_counter +=2*width; //go down 2 rows for next condition
+  			counter = width_counter;//adjust new next pixel
+  			top(newPixel, image, counter, width);//NOTE: for process 0: it has access to whole image, so boarder cases are not covered.
+  		}else{
+  			counter += 3; //next
+  			top(newPixel, image, counter, width);
+  		}
   	}
+  	//printf("new pixel 0: %d %d %d\n", newPixel[rows[0]*width].r, newPixel[rows[0]*width].g, newPixel[rows[0]*width].b);
   }else{
     MPI_Recv(&sent,1, MPI_DOUBLE, 0, tag, MPI_COMM_WORLD, &status);
   	pixel = (double*)malloc(width*sent*sizeof(double));
