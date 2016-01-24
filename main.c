@@ -1,7 +1,8 @@
 #include <stdlib.h>
 #include <math.h>
+#include <stdio.h>
 #include "a1.h"
-//#include "mpi.h"
+#include "mpi.h"
 #include "readwriteppm.c"
 
 //extern RGB * readPPM(char* file, int* width, int* height, int* max);
@@ -49,7 +50,7 @@ int main(){
   for (i=0; i < height % p; i++){
     rows[i]++;}
 
-  int tag = 0
+  int tag = 0;
  
   if (my_rank == 0){
   
@@ -77,7 +78,7 @@ int main(){
 	  MPI_Recv(pixel+offset, rows[source], MPI_DOUBLE, source, tag, MPI_COMM_WORLD, &status);
 	}
     }
-   writePPM("test1.ppm", width, height, max, pixel);
+   //writePPM("test1.ppm", width, height, max, pixel);
 
    free(image);
    free(buf);
