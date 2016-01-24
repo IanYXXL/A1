@@ -3,6 +3,7 @@
 #include <mpi.h>
 #include "a1.h"
 #include "readwriteppm.c"
+#include "Jeremyqzt.c" //Jeremyqzt.c contains processing of image
 int main(int argc, char* argv[]){
   int m, n;
 
@@ -12,23 +13,27 @@ int main(int argc, char* argv[]){
   int offset;
   int tag = 0;
   MPI_Status status;
+  
   char *input = argv[1]; //Input File Name
   char *output = argv[2]; //Output File Name
   int A = atoi(argv[3]); //N - The Filtering Size
   char *F = argv[4]; //F - Type of Filter
   RGB *image;
   
+  //MPI STUFF HERE//
   MPI_Init(&argc, &argv);
   MPI_Comm_size(MPI_COMM_WORLD, &p);
   MPI_Comm_rank(MPI_COMM_WORLD, &my_rank);
-  RGB *pixel;
+  RGB *pixel; //Pixel is local buffer to host the original image segament
+  RGB *newPixel; //new Pixel is the new buffer
 
   int sent;
-  if (my_rank ==0){	//read the file
+  
+  if (my_rank ==0){	//read the file and distribute the work
 
     int *rows;
-  	rows = (int*)malloc(sizeof(int)*p);	//size of rows based on processor
-  	image = readPPM("4K-Ultra-HD.ppm", &width, &height, &max);
+  	rows = (int*)malloc(sizeof(int)*p);	//size of rows based on processor, Based off of tutorial code
+  	image = readPPM("4K-Ultra-HD.ppm", &width, &height, &max); //Read the entire image 
   	
   	for (i=0; i < p; i++)
     	rows[i] = width/p;	//principle calculations
@@ -36,19 +41,29 @@ int main(int argc, char* argv[]){
     	rows[i]++;	//remaining calculations
     	
   	pixel = (double*)malloc(width*rows[0]*sizeof(double)); //process 0 size
-
+  	newPixel = (double*)malloc(width*rows[0]*sizeof(double)); //process 0 new segament size
     for (i=1; i <p; i++){
     	sent = rows[i];
-			MPI_Send(&sent,1, MPI_INT, i, tag, MPI_COMM_WORLD); //send pointers to other processes
-			MPI_Send(image+i*sent,sent*width, MPI_DOUBLE, i, tag, MPI_COMM_WORLD); //send pointers to other processes
+			MPI_Send(&sent,1, MPI_INT, i, tag, MPI_COMM_WORLD); //send sent is # of rows each process is receiving
+			MPI_Send(image+(i-1)*sent,sent*width, MPI_DOUBLE, i, tag, MPI_COMM_WORLD); //send pointers to other processes
 		}
+		
+		
+		for(i = 0; i < rows[0]*width; i+=3){// cycle through all of rank 0's pixels
+  		Jeremyqzt(newPixel, image, i, width);//NOTE: for process 0: it has access to whole image, so boarder cases are not covered.
+  	}
   }else{
     MPI_Recv(&sent,1, MPI_DOUBLE, 0, tag, MPI_COMM_WORLD, &status);
   	pixel = (double*)malloc(width*sent*sizeof(double));
-    MPI_Recv(pixel,width*sent, MPI_DOUBLE, 0, tag, MPI_COMM_WORLD, &status);
+  	newPixel = (double*)malloc(width*sent*sizeof(double));
+    MPI_Recv(pixel,width*(sent+1), MPI_DOUBLE, 0, tag, MPI_COMM_WORLD, &status); //1 more row received
+    
+    //printf("myrank: %d my first red color: %d\n", my_rank, pixel[0].r);
   }
+  
    
   free(pixel);
+  free(newPixel);
   MPI_Finalize();
   return 0;
 
