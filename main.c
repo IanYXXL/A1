@@ -1,3 +1,4 @@
+#include <stdio.h>
 #include <stdlib.h>
 #include <math.h>
 #include <stdio.h>
@@ -5,79 +6,133 @@
 #include "mpi.h"
 #include "readwriteppm.c"
 
-//extern RGB * readPPM(char* file, int* width, int* height, int* max);
-//extern void writePPM(char* file, int width, int height, int max, const RGB *image);
-//int argc, char** argv
-int main(){
-  RGB *image;
-  RGB *pixel;
+int main(int argc, char* argv[]){
+  int m, n;
 
   int width, height, max;
-  int N, F;		
-  int         my_rank;       /* rank of process      */
-  int         p;             /* number of processes  */
-  int         source;        /* rank of sender       */
-  int         dest;          /* rank of receiver     */
-  int         tag = 0;       /* tag for messages     */
-  int i;
-  int curPix= 4;
-
-  MPI_Init(&argc, &argv);	
-
-  MPI_Comm_rank(MPI_COMM_WORLD, &my_rank);
-
+  int my_rank, p;
+  int i, dest, source;
+  int offset;
+  int tag = 0;
+  MPI_Status status;
+  char *input = argv[1]; //Input File Name
+  char *output = argv[2]; //Output File Name
+  int A = atoi(argv[3]); //N - The Filtering Size
+  char *F = argv[4]; //F - Type of Filter
+  RGB *image;
+  RGB *imageDup; //for storing image segments
+  MPI_Init(&argc, &argv);
   MPI_Comm_size(MPI_COMM_WORLD, &p);
+  MPI_Comm_rank(MPI_COMM_WORLD, &my_rank);
+  RGB *pixel;
 
-  N = argv[3]; //N is the block size 
-  F = argv[4]; //F is type of filtering
-  image = readPPM("test.ppm", &width, &height, &max); //Read the image, i don't know if we need this in the MPI section
+  int sent;
+  if (my_rank ==0){	//read the file
 
-
-
-
-  //char        *buf = malloc(5*sizeof(int)+sizeof(RGB));  /*passing N, F, image height,segment top, segment bottom ,partial image for compression*/
-  //if the top/bottom is (N/2)-0.5 away from 0 or image height, then the grid of the NxN must be made smaller when compressing.
-
-  if (N != 3){ //Check N
-   f("N must be 3.");
+      if (N != 3){ //Check N
+   printf("N must be 3.");
    return;
   }
-  // Find how many rows per process.
-  int *rows;
-  rows = (int*)malloc(sizeof(int)*p);
-  for (i=0; i < p; i++){
-    rows[i] = height/p;}
-  for (i=0; i < height % p; i++){
-    rows[i]++;}
+
+    int *rows;
+  	rows = (int*)malloc(sizeof(int)*p);	//size of rows based on processor
+  	image = readPPM("4K-Ultra-HD.ppm", &width, &height, &max);
+  	
+  	for (i=0; i < p; i++)
+    	rows[i] = width/p;	//principle calculations
+  	for (i=0; i < width % p; i++)
+    	rows[i]++;	//remaining calculations
+    	
+  	pixel = (double*)malloc(width*rows[0]*sizeof(double)); //process 0 size
+
+    for (i=1; i <p; i++){
+    	sent = rows[i];
+			MPI_Send(&sent,1, MPI_INT, i, tag, MPI_COMM_WORLD); //send pointers to other processes
+			MPI_Send(image+i*sent,sent*width, MPI_DOUBLE, i, tag, MPI_COMM_WORLD); //send pointers to other processes
+		}
+  }else{
+    MPI_Recv(&sent,1, MPI_DOUBLE, 0, tag, MPI_COMM_WORLD, &status);
+  	pixel = (double*)malloc(width*sent*sizeof(double));
+        imageDup = (double*)malloc(width*sent*sizeof(double));
+    MPI_Recv(imageDup,width*sent, MPI_DOUBLE, 0, tag, MPI_COMM_WORLD, &status);
+        curPix = width; //since not top row
+    for (i=1; i<sent; i++){ //skipping first row, since first row 
+			    //is extra we need for first row
+     for (j=0; j<width; j++){
+	 Jeremyqzt(pixel, imageDup, int curPix);
+	 curPix++; //is this what you wanted???
+	 }
+	 if (i>2){
+	   for (k=0; k<width; k++){
+	    
+	   {
+	}
+     }
+    }
+  }
+   
+  free(pixel);
+  MPI_Finalize();
+  return 0;
+
+
+/*
+
+  
+  // Allocate memory.
+
+  if (my_rank == 0) 
+    {
+	pixel = malloc(sizeof(double))
+	image = malloc(sizeof(double))	
+    } 
+  else 
+    {
+
+    }	  
+
+  // Generate matrix and vector
+  if (my_rank == 0) 
+    { 
+
+    }
+ 	
+  if (my_rank == 0){
+
+  
+  // PUT THIS INTO SEPARATE FUNCTION parallelMatrixVectorProduct and in a file parallmatvec.c
+
 
   int tag = 0;
- 
-  if (my_rank == 0){
+  if (my_rank ==0)
+    {
+      int offset = 0;
+      for (dest = 1; dest < p; dest++) 
+	{
+	  offset += rows[dest-1];
+
+	}
+    }
+  else
+    MPI_Recv(A, rows[my_rank]*n, MPI_DOUBLE, 0, tag, MPI_COMM_WORLD, &status);
   
-   int offset = 0;
-	 
-   for(i=1;i<p;i++){
-	 offset += rows[i-1];
-	MPI_Send( image+offset*width-1, rows[i]*width +1 , MPI_CHAR, i, tag, MPI_COMM_WORLD);
-	//MPI_Recv(buf, 1, MPI_CHAR, i, i, MPI_COMM_WORLD);  
-
-  }else{
-    MPI_Recv(image, rows[my_rank]*width, MPI_DOUBLE, 0, tag, MPI_COMM_WORLD, &status);
-
-  //do work on the image segment
-  }
-
+  MPI_Bcast(b, n, MPI_DOUBLE, 0, MPI_COMM_WORLD); 
+  
+  compDotProduct(rows[my_rank], n, A, b, y);
+  
+  // Get the data
   if (my_rank !=0)
-    MPI_Send(pixel, rows[my_rank], MPI_DOUBLE, 0, tag, MPI_COMM_WORLD);
+    MPI_Send(y, rows[my_rank], MPI_DOUBLE, 0, tag, MPI_COMM_WORLD);
   else
     {
       offset = 0;
       for (source = 1; source < p; source++)
 	{
 	  offset += rows[source-1];
-	  MPI_Recv(pixel+offset, rows[source], MPI_DOUBLE, source, tag, MPI_COMM_WORLD, &status);
+	  MPI_Recv(y+offset, rows[source], MPI_DOUBLE, source, tag, MPI_COMM_WORLD, &status);
 	}
     }
+
    //writePPM("test1.ppm", width, height, max, pixel);
 
    free(image);
@@ -88,46 +143,26 @@ int main(){
 }
 
 /*
+
+
+  if (my_rank == 0)
+    {
+      getResult(m, n, A, b, y);
+    }
+    
+  free(A);
+  free(y);
+  free(b);
+  free(rows);
   
-  image = readPPM(argv[1], &width, &height, &max); //Read the image, i don't know if we need this in the MPI section
+  
+  
+  MPI_Finalize();
+  return 0;
+  
+  
+}  
 
-
-  int local_section = floor(height/p); //local segament of processing
-  int unaccounted = height % p; //OVer the line
-  RGB* sub_image;
-  RGB* total_image_section;
-  int mean_sum_r;
-  int mean_sum_g;
-  int mean_sum_b;
-  int mean;
-  int mean_counter;
-
-  int local_calc = my_rank*local_section;
-  int local_calc_termination = (my_rank + 1)*local_section;
-
-  for (i = 0; i < local_calc_termination; i +=3){ 	//Mean Calculation
-
-
-
+*/
 }
 
-/*
-  int subN = (height / N) / p;  //how any NxN blocks per process
-  int remN = (height / N) % p;	 //remainder to add to the first few processes
-  int curLine ;		//current line
-  int lastLine ;	//previous line in loop
-  RGB subImage ;       //image segment for the process
-
-  int local_midRow = 3*my_rank*subN;
-  */
-
-/*
-  }else{ //side proccess for dealing with NxN
-   MPI_Recv()
-   if(F== A){
-
-   }else if(F==M){
-
-   }
-   MPI_Send()
-*/
