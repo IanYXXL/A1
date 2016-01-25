@@ -1,6 +1,6 @@
 #include "math.h"
 
-void top(RGB *pixel, RGB *image, int curPix, int width){
+void top(RGB *pixel, RGB *image, int curPix, int width, int height){
 // USAGE: GIFF empty and oiginal image, puts mean filtered image into empty buffer.
  int i;
   if  (curPix == 0){  //Top row, left corner
@@ -24,18 +24,7 @@ void top(RGB *pixel, RGB *image, int curPix, int width){
 			pixel[list[i]].g= floor((image[width-1].g + image[width-2].g + image[2*width-1].g + image[2*width-2].g)/4);
 			pixel[list[i]].b= floor((image[width-1].b + image[width-2].b + image[2*width-1].b + image[2*width-2].b)/4);
 			}
-    }else{ //all other
-    int list[9] = {curPix, curPix+1,curPix-1,curPix+width,curPix+width-1,curPix+width+1,curPix-width,curPix-width-1,curPix-width+1}; 
-    for  (i = 0; i < 9; i++){
-			pixel[list[i]].r= floor((image[curPix].r + image[curPix+1].r + image[curPix -1].r + image[curPix +width-1].r+image[curPix+width+1].r+image[curPix+width].r+ image[curPix-width-1].r+image[curPix-width+1].r+image[curPix-width].r)/9);
-			pixel[list[i]].g= floor((image[curPix].g + image[curPix+1].g + image[curPix -1].g + image[curPix +width-1].g+image[curPix+width+1].g+image[curPix+width].g+ image[curPix-width-1].g+image[curPix-width+1].g+image[curPix-width].g)/9);
-			pixel[list[i]].b= floor((image[curPix].b + image[curPix+1].b + image[curPix -1].b + image[curPix +width-1].b+image[curPix+width+1].b+image[curPix+width].b+ image[curPix-width-1].b+image[curPix-width+1].b+image[curPix-width].b)/9);
-		}
-}
-}
-void middle(RGB *pixel, RGB *image, int curPix, int width, int height){
-	int i;
-  if ((((curPix+1) % width) == 0)&&(curPix != (width-1))&&(curPix+1 != width*height)){ //Right Row
+	}else if ((((curPix+1) % width) == 0)&&(curPix != (width-1))&&(curPix+1 != width*height)){ //Right Row
     int list[6] = {curPix - 1, curPix , curPix - width, curPix - width - 1,curPix + width, curPix + width - 1}; 
     for  (i = 0; i < 6; i++){
 			pixel[list[i]].r= floor((image[curPix].r + image[curPix-1].r + image[curPix -width].r + image[curPix -width-1].r+image[curPix+width-1].r+image[curPix+width].r)/6);
@@ -49,19 +38,7 @@ void middle(RGB *pixel, RGB *image, int curPix, int width, int height){
 			pixel[list[i]].g= floor((image[curPix + 1].g + image[curPix].g + image[curPix -width].g + image[curPix -width+1].g+image[curPix+width+1].g+image[curPix+width].g)/6);
 			pixel[list[i]].b= floor((image[curPix + 1].b + image[curPix].b + image[curPix -width].b + image[curPix -width+1].b+image[curPix+width+1].b+image[curPix+width].b)/6);
     }
-	}else{ //all other
-    int list[9] = {curPix, curPix+1,curPix-1,curPix+width,curPix+width-1,curPix+width+1,curPix-width,curPix-width-1,curPix-width+1}; 
-    for  (i = 0; i < 9; i++){
-			pixel[list[i]].r= floor((image[curPix].r + image[curPix+1].r + image[curPix -1].r + image[curPix +width-1].r+image[curPix+width+1].r+image[curPix+width].r+ image[curPix-width-1].r+image[curPix-width+1].r+image[curPix-width].r)/9);
-			pixel[list[i]].g= floor((image[curPix].g + image[curPix+1].g + image[curPix -1].g + image[curPix +width-1].g+image[curPix+width+1].g+image[curPix+width].g+ image[curPix-width-1].g+image[curPix-width+1].g+image[curPix-width].g)/9);
-			pixel[list[i]].b= floor((image[curPix].b + image[curPix+1].b + image[curPix -1].b + image[curPix +width-1].b+image[curPix+width+1].b+image[curPix+width].b+ image[curPix-width-1].b+image[curPix-width+1].b+image[curPix-width].b)/9);
-		}
-	}
-}
-
-void bottom(RGB *pixel, RGB *image, int curPix, int width, int height){
-	int i;
-  if (curPix+1 == width*height){ //Bottom right corner
+	}else if (curPix+1 == width*height){ //Bottom right corner
     int list[4] = {curPix-width-1,curPix-width,curPix-1, curPix};
     for  (i = 0; i < 4; i++){
 			pixel[list[i]].r= floor((image[curPix - width-1].r + image[curPix-width].r + image[curPix-1].r + image[curPix].r)/4);
