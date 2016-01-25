@@ -26,7 +26,7 @@ int main(int argc, char* argv[]){
   MPI_Comm_rank(MPI_COMM_WORLD, &my_rank);
   RGB *image;
   RGB *newPixel; //new Pixel is the new buffer
-	int counter;
+	int counter = 0;
 
   if (my_rank ==0){	//read the file and distribute the work
     int *rows;
@@ -34,16 +34,20 @@ int main(int argc, char* argv[]){
   	rows = (int*)malloc(sizeof(int)*p);	//size of rows based on processor, Based off of tutorial code
   	image = readPPM("4K-Ultra-HD.ppm", &width, &height, &max); //Read the entire image 
 
-
+		if (p ==0)
+		{
+			rows[0] = height;
+		}else{ //p > 1
 		for (i=0; i < p; i++)	//Code inspired from tutorial section
-			rows[i] = width/p; //principle calculations
-		for (i=0; i < width % p; i++)
+			rows[i] = height/p; //principle calculations
+		for (i=0; i < height % p; i++)
 			rows[i]++; 
 		for (i = 0; i <p-1; i++){ //remaining
 			while (rows[i]%3 !=0){
 				rows[i]-=1;
 				rows[i+1]-=1;
 			}
+		}
 		}
 		
   	newPixel = (double*)malloc(width*rows[0]*sizeof(double)); //dosent matter which one used
@@ -53,13 +57,13 @@ int main(int argc, char* argv[]){
     	MPI_Send(&width, 1, MPI_INT, i, tag, MPI_COMM_WORLD); //send sent is # of rows each process is receiving
     	MPI_Send(&height, 1, MPI_INT, i, tag, MPI_COMM_WORLD); //send sent is # of rows each process is receiving
 			MPI_Send(&sent, 1, MPI_INT, i, tag, MPI_COMM_WORLD); //send sent is # of rows each process is receiving
-			MPI_Send(image+i*sent*height, sent*height, MPI_DOUBLE, i, tag, MPI_COMM_WORLD); //send pointers to other processes
+			MPI_Send(image+i*sent*width, sent*width, MPI_DOUBLE, i, tag, MPI_COMM_WORLD); //send pointers to other processes
 		}
 
 		counter = 0;
 		int width_counter = width;
 		top(newPixel, image, 0, width,height);//NOTE: first run through
-		while(counter < rows[0]*height){// cycle through all of rank 0's pixels
+		while(counter < rows[0]*width){// cycle through all of rank 0's rows
   		if(counter - width_counter > 0){
   			width_counter = width_counter + 3*width; //go down 3 rows for next condition
   			counter = (width_counter - width);//adjust new next pixel
@@ -76,31 +80,37 @@ int main(int argc, char* argv[]){
     		pixel[i*rows[i]+t] = newPixel[t]; 
     	}
     }*/
-    printf("my indexed: %d %d %d %d\n", rows[0]*height,image[4147200].r,image[4147200].g,image[4147200].b);
+
   	writePPM("out.ppm", width, height, max, newPixel);
 
   }else{	
     MPI_Recv(&width,1, MPI_INT, 0, tag, MPI_COMM_WORLD, &status); //received width
     MPI_Recv(&height,1, MPI_INT, 0, tag, MPI_COMM_WORLD, &status); //received height
     MPI_Recv(&sent,1, MPI_INT, 0, tag, MPI_COMM_WORLD, &status); //row counter
-  	image = (double*)malloc(height*sent*sizeof(double)); //allocate for receive
-  	newPixel = (double*)malloc(height*sent*sizeof(double)); //new buffer
-    MPI_Recv(image,height*sent, MPI_DOUBLE, 0, tag, MPI_COMM_WORLD, &status); //1 more row received
-    int width_counter = width;
-    int counter = 0;
-    printf("my rank: %d %d %d %d\n", my_rank,image[0].r,image[0].g,image[0].b);
+  	image = (double*)malloc(width*sent*sizeof(double)); //allocate for receive
+  	newPixel = (double*)malloc(width*sent*sizeof(double)); //new buffer
+    MPI_Recv(image,width*sent, MPI_DOUBLE, 0, tag, MPI_COMM_WORLD, &status); //1 more row received
+    //width = 3840
+    int width_counter = width; //start 1 down, already ensured that this will be the case
+    counter = 0;
     /*
+    printf("my rank: %d %d %d %d\n", my_rank,image[0].r,image[0].g,image[0].b);
+    printf("ROWS:%d, WIDTH: %d", sent, width);
+    */
 		while(counter < sent*width){// cycle through rest of the lines
   		if(counter - width_counter > 0){
   			width_counter = width_counter + 3*width; //go down 3 rows for next condition
   			counter = (width_counter - width);//adjust new next pixel
-  			top(newPixel, pixel, counter, width,height);//NOTE: for process 0: it has access to whole image, so boarder cases are not covered.
+  			top(newPixel, image, counter, width,height);//NOTE: for process 0: it has access to whole image, so boarder cases are not covered.
   		}else{
   			counter += 3; //next
-  			top(newPixel, pixel, counter, width, height);
+  			top(newPixel, image, counter, width, height);
   		}
-  	} 	*/
-  	//MPI_Send(pixel, sent*width+width, MPI_DOUBLE, 0, tag, MPI_COMM_WORLD); //send pointers to other processes
+  	} 	
+  	
+  	for (i=2;i<5;i++){
+  		printf("testing P1:%d%d%d\n",newPixel[i].r,newPixel[i].g,newPixel[i].b);
+		}
   }
 
   free(newPixel);
