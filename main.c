@@ -23,9 +23,6 @@ int main(int argc, char* argv[]){
   int A = atoi(argv[3]); //N - The Filtering Size
   char *F = argv[4]; //F - Type of Filter
   RGB *image;
-<<<<<<< HEAD
-  RGB *imageDup; //for storing image segments
-=======
   
   //MPI STUFF HERE//
   MPI_Init(&argc, &argv);
@@ -38,7 +35,7 @@ int main(int argc, char* argv[]){
   
   if (my_rank ==0){	//read the file and distribute the work
 
-      if (N != 3){ //Check N
+      if (A != 3){ //Check N
    printf("N must be 3.");
    return;
   }
@@ -99,7 +96,7 @@ int main(int argc, char* argv[]){
     //printf("myrank: %d my first red color: %d\n", my_rank, pixel[0].r);
 
         counter=width; //since top row is extra
-	width_counter=2*width;
+	width_counter=2*	width;
 
 	if (my_rank==p){ // if last row, need to treat it differently
 		sent=sent-1;
@@ -109,9 +106,9 @@ int main(int argc, char* argv[]){
   		if(counter - width_counter > 0){
   			width_counter +=3*width; //go down 2 rows for next condition
   			counter = width_counter;//adjust new next pixel
-  			middle(newPixel, pixel, counter, width);//NOTE: for process 0: it has access to whole image, so boarder cases are not covered.
+  			middle(newPixel, pixel, counter, width, width_counter/width);//NOTE: for process 0: it has access to whole image, so boarder cases are not covered.
   		}else{
-  			middle(newPixel, pixel, counter, width);
+  			middle(newPixel, pixel, counter, width, width_counter/width);
   			counter += 3; //next
   		}
   	}
@@ -121,7 +118,7 @@ int main(int argc, char* argv[]){
 		counter = width_counter;
 		while(counter < (2+sent)*width){//2+sent for last row. Will skip last row if its already processed by second last row
  
-  			bottom(newPixel, pixel, counter, width);
+  			bottom(newPixel, pixel, counter, width,width_counter/width);
   			counter += 3; //next
   		}
 	}
